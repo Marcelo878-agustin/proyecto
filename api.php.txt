@@ -1,0 +1,59 @@
+<?php
+include 'config.php';
+
+header('Content-Type: application/json');
+$method = $_SERVER['REQUEST_METHOD'];
+
+switch ($method) {
+    case 'GET':
+        $result = $conn->query("SELECT * FROM usuarios");
+        $users = [];
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
+        }
+        echo json_encode($users);
+        break;
+
+    case 'POST':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $nombre = $data['nombre'];
+        $ciudad = $data['ciudad'];
+        $telefono = $data['telefono'];
+        $correo = $data['correo'];
+        
+        $stmt = $conn->prepare("INSERT INTO usuarios (nombre, ciudad, telefono, correo) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param('ssss', $nombre, $ciudad, $telefono, $correo);
+        $stmt->execute();
+        echo json_encode(['id' => $stmt->insert_id]);
+        $stmt->close();
+        break;
+
+    case 'PUT':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id = $data['id'];
+        $nombre = $data['nombre'];
+        $ciudad = $data['ciudad'];
+        $telefono = $data['telefono'];
+        $correo = $data['correo'];
+        
+        $stmt = $conn->prepare("UPDATE usuarios SET nombre=?, ciudad=?, telefono=?, correo=? WHERE id=?");
+        $stmt->bind_param('ssssi', $nombre, $ciudad, $telefono, $correo, $id);
+        $stmt->execute();
+        echo json_encode(['success' => $stmt->affected_rows > 0]);
+        $stmt->close();
+        break;
+
+    case 'DELETE':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id = $data['id'];
+        
+        $stmt = $conn->prepare("DELETE FROM usuarios WHERE id=?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        echo json_encode(['success' => $stmt->affected_rows > 0]);
+        $stmt->close();
+        break;
+}
+
+$conn->close();
+?>
